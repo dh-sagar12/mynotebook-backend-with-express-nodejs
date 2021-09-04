@@ -10,6 +10,9 @@ const JWT_TOKEN = process.env.JWT_SECRET_KEY
 
 
 // creating router
+
+
+//ROUTE 1: FOR CREATING USER
 router.post('/createuser/',
     // validating email name and password 
     [
@@ -39,18 +42,64 @@ router.post('/createuser/',
                 password: secPass
             })
             const jwtData = {
-                user:{
+                user: {
                     id: user.id
                 }
             }
             const authtoken = jwt.sign(jwtData, JWT_TOKEN)
 
-            res.json({authtoken})
+            res.json({ authtoken })
 
-           
+
         } catch (error) {
             console.error(error);
-            res.status(500).send('Something Went Wrong')
+            res.status(500).send('Internal Server Error')
+        }
+
+    })
+
+
+
+//ROUTE 2: FOR AUTHENTICATING USER: LOGGING NOT REQUIRED
+router.post('/login/',
+    // validating email name and password 
+    [
+        body('email', "Please Enter valid name").isEmail(),
+        body('password', "Password cannot be blank").exists()
+    ], async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+
+        //checking for user having above credentials
+        const { email, password } = req.body
+        try {
+
+            let user = await User.findOne({ email })
+            if (!user) {
+                return res.status(400).json({ error: "Invalid Login Credentials" })
+            }
+            // logging if credentials matched
+            const passwordCompare = await bcrypt.compare(password, user.password)
+
+            if (!passwordCompare) {
+                return res.status(400).json({ error: "Invalid Login Credentials" })
+            }
+            const Data = {
+                user: {
+                    id: user.id
+                }
+            }
+            const authtoken = jwt.sign(Data, JWT_TOKEN)
+
+            res.json({ authtoken })
+
+
+        } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error')
         }
 
     })

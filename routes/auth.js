@@ -2,8 +2,14 @@ const express = require('express');
 const User = require('../models/User')
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
+const bcrypt = require('bcryptjs');
+require('dotenv').config()
+const jwt = require('jsonwebtoken');
+
+const JWT_TOKEN = process.env.JWT_SECRET_KEY
 
 
+// creating router
 router.post('/createuser/',
     // validating email name and password 
     [
@@ -25,16 +31,23 @@ router.post('/createuser/',
                 return res.status(400).json({ error: "User already Exist with this email." })
             }
             // creating user if user with same email not exist 
+            const salt = bcrypt.genSaltSync(10);
+            const secPass = await bcrypt.hash(req.body.password, salt)
             user = await User.create({
                 name: req.body.name,
                 email: req.body.email,
-                password: req.body.password
+                password: secPass
             })
-            try {
-                res.json(user)
-            } catch (err) {
-                res.json(err)
+            const jwtData = {
+                user:{
+                    id: user.id
+                }
             }
+            const authtoken = jwt.sign(jwtData, JWT_TOKEN)
+
+            res.json({authtoken})
+
+           
         } catch (error) {
             console.error(error);
             res.status(500).send('Something Went Wrong')

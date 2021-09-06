@@ -5,6 +5,7 @@ const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
+const fetchuser = require('../middleware/fetchuser')
 
 const JWT_TOKEN = process.env.JWT_SECRET_KEY
 
@@ -103,6 +104,23 @@ router.post('/login/',
         }
 
     })
+
+
+
+// ROUTE 3 :getting user information if user is verified (authenticated)
+router.post('/getuser/', fetchuser,
+    async (req, res) => {
+        try {
+            let userId = req.user.id
+            let user = await User.findById(userId).select("-password");
+            res.json(user);
+
+        } catch (error) {
+            res.status(500).send("Internal Server Error")
+        }
+
+    }
+)
 
 
 module.exports = router

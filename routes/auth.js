@@ -18,12 +18,18 @@ router.post('/createuser/',
     // validating email name and password 
     [
         body('name', "Names less than three characters are considered as invalid name").isLength({ min: 3 }),
-        body('email', "Please Enter valid name").isEmail(),
-        body('password', "Password must be atleast Five Characters long").isLength({ min: 5 })
+        body('email', "Please Enter valid email").isEmail(),
+        body('password', "Password must be atleast Five Characters long").isLength({ min: 5 }),
+        body('cpassword', "Both password and confirm password should be same").isLength({ min: 5 }).custom((value, {req})=>{
+            if (value !==req.body.password){
+                throw new Error('Both password and confirm password should be same');
+            }
+            return true
+        })
     ], async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ errors: errors.array(), success: false });
         }
 
 
@@ -32,7 +38,7 @@ router.post('/createuser/',
 
             let user = await User.findOne({ email: req.body.email })
             if (user) {
-                return res.status(400).json({ error: "User already Exist with this email." })
+                return res.status(400).json({ error: "User already Exist with this email.", success: false })
             }
             // creating user if user with same email not exist 
             const salt = bcrypt.genSaltSync(10);
@@ -49,7 +55,7 @@ router.post('/createuser/',
             }
             const authtoken = jwt.sign(jwtData, JWT_TOKEN)
 
-            res.json({ authtoken })
+            res.json({ authtoken, success: true, user: user.name, email: user.email })
 
 
         } catch (error) {
@@ -65,12 +71,12 @@ router.post('/createuser/',
 router.post('/login/',
     // validating email name and password 
     [
-        body('email', "Please Enter valid name").isEmail(),
+        body('email', "Please Enter valid email").isEmail(),
         body('password', "Password cannot be blank").exists()
     ], async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
+            return res.status(400).json({ success: false, errors: errors.array() });
         }
 
 
@@ -80,13 +86,14 @@ router.post('/login/',
 
             let user = await User.findOne({ email })
             if (!user) {
-                return res.status(400).json({ error: "Invalid Login Credentials" })
+                return res.status(400).json({ error: "Invalid Login Credentials", success:false })
             }
             // logging if credentials matched
             const passwordCompare = await bcrypt.compare(password, user.password)
 
             if (!passwordCompare) {
-                return res.status(400).json({ error: "Invalid Login Credentials" })
+                return res.status(400).json({ error: "Invalid Login Credentials", success:false })
+
             }
             const Data = {
                 user: {
@@ -94,8 +101,9 @@ router.post('/login/',
                 }
             }
             const authtoken = jwt.sign(Data, JWT_TOKEN)
+            
 
-            res.json({ authtoken })
+            res.json({ authtoken, success:true, user: user.name, email: user.email })
 
 
         } catch (error) {

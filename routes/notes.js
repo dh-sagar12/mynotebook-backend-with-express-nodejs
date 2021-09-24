@@ -1,7 +1,8 @@
 const express = require('express');
 const fetchuser = require('../middleware/fetchuser')
 const { body, validationResult } = require('express-validator');
-const Note = require('../models/Notes')
+const Note = require('../models/Notes');
+const User = require('../models/User');
 
 const router = express.Router();
 
@@ -23,16 +24,30 @@ router.post('/createnote/', fetchuser,
          return res.status(400).json({ errors: errors.array() });
       }
       const { title, description, tag } = req.body
-      const note = new Note({
-         title, description, tag, user: req.user.id
-      })
-      const savedNote = await note.save();
-      res.json(savedNote)
+      try {
+         const note = new Note({
+            title, description, tag, user: req.user.id
+         })
+         const savedNote = await note.save();
+         res.json(savedNote)
+      } catch (error) {
+         res.status(500).send('Internal Server Error')
+
+      }
+    
 
    }
 )
 
-router.put('/updatenotes/:id', fetchuser, async (req, res) => {
+router.put('/updatenotes/:id', fetchuser, [
+   // validating email name and password 
+   body('title', "Title Must Have Atleast 3 Characters").isLength({ min: 3 }),
+   body('description', "Decription must be atleast Five Characters long").isLength({ min: 5 })
+], async (req, res) => {
+   const errors = validationResult(req);
+   if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+   }
    const { title, description, tag } = req.body;
    let newNote = {}
    if (title) {

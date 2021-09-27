@@ -1,8 +1,12 @@
 const mongoose = require('mongoose');
+require('dotenv').config()
+
 
 // const mongoURI = 'mongodb://localhost:27017/iNotebook';
+const dbUri = process.env.DATABASE_URI 
 
-const mongoURI = 'mongodb+srv://admin:admin@inotebook.qj6gn.mongodb.net/inotebook?retryWrites=true&w=majority';
+const mongoURI = dbUri;
+console.log(mongoURI);
 
 const connectToMongo = () => {
     mongoose.connect(mongoURI, {
